@@ -1,45 +1,55 @@
 const apiKey = "TI4UM493FM7QMUXH"; //API key from alpha vantage, so that we can use their API
 const request = require('request');
 const fs = require('fs');
+const { Console } = require('console');
 
-request('https://www.alphavantage.co/query?function=FX_INTRADAY&from_symbol=USD&to_symbol=USD&interval=1min&apikey=' + apiKey, dataManipulation);
+//request('https://www.alphavantage.co/query?function=FX_INTRADAY&from_symbol=BTC&to_symbol=USD&interval=1min&apikey=' + apiKey, dataManipulation);
 
-request('https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=ETH&to_currency=USD&apikey=' + apiKey, function(error, response, body) {
+/*request('https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=ETH&to_currency=USD&apikey=' + apiKey, function(error, response, body) {
     console.log(body);
-});
+});*/
 
-function dataManipulation(error, response, body) {
-    let startingPoint = body.indexOf('"Meta Data": {') + 14;
-    body = body.slice(startingPoint);
+let options = {
+    url: 'https://min-api.cryptocompare.com/data/v2/histominute?fsym=ETH&tsym=USD&limit=180&api_key=5dec7fe66779ad98851f91aacca201d83e4fbff441f02a3bce260fbe93c4d987',
+}
+
+request(options, dataprocessing);
+
+/*
+
+    Notes:
+
+    The last item in the array is the closest to us in minutes.
+
+*/
+
+function dataprocessing(error, response, body) {
+
+    let json = JSON.parse(body);
     
-    console.log(body);
+    let candles = json.Data.Data;
 
-    fs.writeFile("moving.txt", body, function(err) {
-        if (err) return console.log(error);
-    })
+    let differenceArray = [];
+    let first = true;
+    let lastCandle = {};
 
-    let hourdiff = [];
+    for (let candle of candles) {
+
+        if (first) {
+            lastCandle = candle;
+            first = false;
+        } else {
+            differenceArray.push(parseFloat(candle.open - lastCandle.open).toFixed(4) * 1);
+            lastCandle = candle;
+        }
     
-    let splitBody = body.split("\n");
-    splitBody.shift();
-    
-    let hours = 3;
-
-    for (let i = 901; i < 1080; i = i + 3) {
-        hourdiff.push(splitBody[i]);
     }
-    
-    let numberData = [];
-    
-    for (let line of hourdiff) {
-        numberData.push(line.slice(line.indexOf(": ") + 3, line.length - 1) * 1);
-    }
 
-    let differenceData = [];
+    console.log(calculateAverageStreaks(differenceArray));
 
-    for (let i = 1; i < numberData.length; i++) {
-        differenceData.push(parseFloat((numberData[i - 1] - numberData[i]).toFixed(4)));
-    }
+}
+
+function calculateAverageStreaks(differenceData) {
 
     let positive = 0;
     let negative = 0;
@@ -54,15 +64,18 @@ function dataManipulation(error, response, body) {
             negative++
         } 
 
-        if (positive > 0 && data < 0) {
+        if (positive > 3 && data < 0) {
             positiveAverageArr.push(positive);
             positive = 0;
-        } else if (negative > 0 && data >= 0) {
+        } else if (negative > 3 && data >= 0) {
             negativeAverageArr.push(negative);
             negative = 0;
         }
 
     }
+
+    if (positive > 0) positiveAverageArr.push(positive)
+    else negativeAverageArr.push(negative);
 
     let total = 0;
     for (let num of positiveAverageArr) {
@@ -77,9 +90,10 @@ function dataManipulation(error, response, body) {
 
     let negativeAverage = total / negativeAverageArr.length;
 
-    console.log("Average Positive Streak: " + positiveAverage);
-    console.log("Average Negative Streak: " + negativeAverage);
+    return {positiveAverage: positiveAverage, negativeAverage: negativeAverage, currentStreak: (positive > 0) ? positive : -negative}
 
+}
 
+function movingDiffStrat(averages) { 
 
 }
