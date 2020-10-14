@@ -14,6 +14,7 @@ let stopLossValue = 0;
 let type = 0; //type 1 is the regular buy, type 2 is the short position
 
 let buyPrice = 0;
+let lastPrice = 0;
 
 /*
 Notes:
@@ -139,10 +140,8 @@ function movingDiffStrat(averages) {
     function(error, response, body) {
         
         let currentPrice = JSON.parse(body).USD;
-        
-        console.log("Current price: " + currentPrice + " | " + "Stop Loss Value: " + stopLossValue);
-        
-        if ((averages.marketSwing) >= 2  && averages.negativeAverage * 0.2 < Math.abs(averages.currentStreak) && currentPosition == false) {
+
+        if ((averages.marketSwing) >= 2  && averages.positiveAverage * 0.2 < averages.currentStreak && currentPosition == false) {
             
             //Buy with positive swing
             
@@ -158,13 +157,13 @@ function movingDiffStrat(averages) {
                 if (err) throw err;
             });
             
-        } else if ((averages.marketSwing) <= -2  && averages.positiveAverage * 0.2 < Math.abs(averages.currentStreak) && currentPosition == false) {
+        } else if ((averages.marketSwing) <= -2  && averages.negativeAverage * 0.2 < Math.abs(averages.currentStreak) && currentPosition == false) {
             
             //Short with negative swing
             
             let json = {price: currentPrice, position: "Short"};
             console.log(json);
-            stopLossValue = trailingStopLossForShort(currentPrice * 1.003, 0);
+            stopLossValue = trailingStopLossForShort(currentPrice * 1.002, 0);
             currentPosition = true;
             fakemoney = fakemoney + currentPrice;
             type = 2;
@@ -213,6 +212,14 @@ function movingDiffStrat(averages) {
                 stopLossValue = trailingStopLoss(stopLossValue, 0.0013 * buyPrice);
             }
 
+            /*
+                Adjusts the stop loss
+            */
+
+           if (lastPrice < currentPrice) {
+                stopLossValue = trailingStopLoss(stopLossValue, lastPrice - currentPrice);
+            }
+
         } else if (type == 2) {
             
             /*
@@ -243,19 +250,26 @@ function movingDiffStrat(averages) {
                 This jumps the stop loss to properly stay within the profit windows
             */
 
-           if (currentPrice - buyPrice < 0.0013 * buyPrice) {
-            stopLossValue = trailingStopLossForShort(stopLossValue, 0.0013 * buyPrice);
-        }
+           if (buyPrice - currentPrice > 0.0013 * buyPrice) {
+                stopLossValue = trailingStopLossForShort(stopLossValue, 0.0013 * buyPrice);
+            }
+
+            /*
+                Adjusts the stop loss
+            */
+
+           if (lastPrice > currentPrice) {
+                stopLossValue = trailingStopLossForShort(stopLossValue, lastPrice - currentPrice);
+            }
 
         }
         
+        console.log("Current price: " + currentPrice + " | " + "Stop Loss Value: " + stopLossValue);
+        lastPrice = currentPrice;
+
     });
     
 }
-
-
-
-
 
 /*
 Only to be ran WHEN AND ONLY WHEN, prices increase, never run on a decrease.
