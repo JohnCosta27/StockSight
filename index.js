@@ -7,13 +7,13 @@ let options = {
 
 request(options, dataprocessing);
 
-let purchases = [];
 let currentPosition = false;
 let fakemoney = 500;
 
 let stopLossValue = 0;
-let lastPrice = 0;
-let started = false;
+let type = 0; //type 1 is the regular buy, type 2 is the short position
+
+let buyPrice = 0;
 
 /*
 Notes:
@@ -118,7 +118,7 @@ function calculateAverageStreaks(differenceData) {
     
     let marketSwing = 0;
     
-    for (let i = differenceData.length - 1; i > differenceData.length - 16; i--) {
+    for (let i = differenceData.length - 1; i > differenceData.length - 31; i--) {
         if (differenceData[i] > 0) {
             marketSwing++;
         } else {
@@ -135,71 +135,127 @@ function calculateAverageStreaks(differenceData) {
 
 function movingDiffStrat(averages) { 
     
-    //Pull current price.
-    //If it hits our losing average, buy
-    //Store the initial buy price.
-    //Calculate stop loss value
-    //Wait 1 min
-    //Check price, if it hits stop loss value, sell, else. Wait 1 min
-    //Go to line 4
-    
-    request('https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD&api_key=5dec7fe66779ad98851f91aacca201d83e4fbff441f02a3bce260fbe93c4d987', function(error, response, body) {
-    
-    let currentPrice = JSON.parse(body).USD;
-    
-    if (!started) {
-        lastPrice = currentPrice;
-        started = true;
-        stopLossValue = trailingStopLoss(currentPrice * 0.998, 0);
-    } else {
+    request('https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD&api_key=5dec7fe66779ad98851f91aacca201d83e4fbff441f02a3bce260fbe93c4d987', 
+    function(error, response, body) {
         
-        if (lastPrice < currentPrice) {
-            //Increased, change stoploss
-            stopLossValue = trailingStopLoss(stopLossValue, currentPrice - lastPrice);
-            lastPrice = currentPrice;
+        let currentPrice = JSON.parse(body).USD;
+        
+        console.log("Current price: " + currentPrice + " | " + "Stop Loss Value: " + stopLossValue);
+        
+        if ((averages.marketSwing) >= 2  && averages.negativeAverage * 0.2 < Math.abs(averages.currentStreak) && currentPosition == false) {
+            
+            //Buy with positive swing
+            
+            let json = {price: currentPrice, position: "Buy"};
+            console.log(json);
+            stopLossValue = trailingStopLoss(currentPrice * 0.998, 0);
+            currentPosition = true;
+            fakemoney = fakemoney - currentPrice;
+            type = 1;
+            buyPrice = currentPrice;
+
+            fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
+                if (err) throw err;
+            });
+            
+        } else if ((averages.marketSwing) <= -2  && averages.positiveAverage * 0.2 < Math.abs(averages.currentStreak) && currentPosition == false) {
+            
+            //Short with negative swing
+            
+            let json = {price: currentPrice, position: "Short"};
+            console.log(json);
+            stopLossValue = trailingStopLossForShort(currentPrice * 1.003, 0);
+            currentPosition = true;
+            fakemoney = fakemoney + currentPrice;
+            type = 2;
+            buyPrice = currentPrice;
+
+            fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
+                if (err) throw err;
+            }); 
+            
         }
         
-    }
-    
-    console.log("Current price: " + currentPrice + " | " + "Stop Loss Value: " + stopLossValue);
-    
-    if (Math.abs(averages.marketSwing) > 0.8 * averages.negativeAverage && averages.marketSwing < 0 && currentPosition == false) {
-        //Buy
-        let json = {price: currentPrice, position: "Buy"};
-        console.log(json);
-        purchases.push(json);
-        stopLossValue = trailingStopLoss(currentPrice * 0.998, 0);
-        currentPosition = true;
-        fakemoney = fakemoney - currentPrice;
+        /*
+            Selling section
+        */
         
-        fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
-            if (err) throw err;
-            console.log('Saved!');
-        });
-        
-    }
-    
-    if (stopLossValue >= currentPrice && currentPosition == true) {
-        //sell
-        fakemoney = fakemoney + currentPrice;
-        let json = {price: currentPrice, position: "Sell", money: fakemoney};
-        console.log(json);
-        purchases.push(json);
-        currentPosition = false;
-        stopLossValue = trailingStopLoss(currentPrice * 0.998, 0);
-        
-        fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
-            if (err) throw err;
-            console.log('Saved!');
-        });
-    }
-    
-    lastPrice = currentPrice;
-    
-});
+        if (type == 1) {
 
+            /*
+                This is the regular buy position
+            */
 
+            if (stopLossValue >= currentPrice && currentPosition == true) {
+                
+                //Sell the current open (buy) position
+                
+                fakemoney = fakemoney + currentPrice;
+                let json = {price: currentPrice, position: "Sell", money: fakemoney};
+                console.log(json);
+                currentPosition = false;
+                stopLossValue = trailingStopLoss(currentPrice * 0.998, 0);
+                
+                type = 0;
+
+                fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
+                    if (err) throw err;
+                });
+                
+            }
+
+            /*
+                Might need updating
+                This jumps the stop loss to properly stay within the profit windows
+            */
+
+            if (currentPrice - buyPrice > 0.0013 * buyPrice) {
+                stopLossValue = trailingStopLoss(stopLossValue, 0.0013 * buyPrice);
+            }
+
+        } else if (type == 2) {
+            
+            /*
+                This is the short position
+            */
+
+            if (stopLossValue <= currentPrice && currentPosition == true) {
+                
+                //Sell the current short position
+
+                fakemoney = fakemoney - currentPrice;
+                let json = {price: currentPrice, position: "End Short", money: fakemoney};
+                console.log(json);
+                currentPosition = false;
+                stopLossValue = trailingStopLossForShort(currentPrice * 1.002, 0);
+                
+                type = 0;
+
+                fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
+                    if (err) throw err;
+                });
+                
+                
+            }
+            
+            /*
+                Might need updating
+                This jumps the stop loss to properly stay within the profit windows
+            */
+
+           if (currentPrice - buyPrice < 0.0013 * buyPrice) {
+            stopLossValue = trailingStopLossForShort(stopLossValue, 0.0013 * buyPrice);
+        }
+
+        }
+        
+    });
+    
 }
+
+
+
+
 
 /*
 Only to be ran WHEN AND ONLY WHEN, prices increase, never run on a decrease.
@@ -207,4 +263,9 @@ Only to be ran WHEN AND ONLY WHEN, prices increase, never run on a decrease.
 
 function trailingStopLoss(currentStopLoss, difference) {
     return currentStopLoss + difference;
+}
+
+
+function trailingStopLossForShort(currentStopLoss, difference){
+    return currentStopLoss - difference
 }
