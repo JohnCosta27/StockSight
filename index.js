@@ -2,17 +2,31 @@ const request = require('request');
 const fs = require('fs');
 
 let options = {
-    url: 'https://min-api.cryptocompare.com/data/v2/histominute?fsym=ETH&tsym=USD&limit=180&api_key=5dec7fe66779ad98851f91aacca201d83e4fbff441f02a3bce260fbe93c4d987',
+    url: 'https://min-api.cryptocompare.com/data/v2/histominute?fsym=ETH&tsym=USD&limit=60&api_key=5dec7fe66779ad98851f91aacca201d83e4fbff441f02a3bce260fbe93c4d987',
 }
 
 request(options, dataprocessing);
 
-let money = 100;
+let purchases = [];
+let currentPosition = false;
+let fakemoney = 500;
+
+let stopLossValue = 0;
+let lastPrice = 0;
+let started = false;
 
 /*
 Notes:
 The last item in the array is the closest to us in minutes.
 */
+
+master();
+
+function master() {
+    setInterval(function() {
+        request(options, dataprocessing); 
+    }, 5000);
+}
 
 function dataprocessing(error, response, body) {
     
@@ -25,7 +39,6 @@ function dataprocessing(error, response, body) {
     let lastCandle = {};
     
     for (let candle of candles) {
-        //console.log(candle.open);
         if (first) {
             lastCandle = candle;
             first = false;
@@ -36,12 +49,9 @@ function dataprocessing(error, response, body) {
         
     }
     
-    for (let num of differenceArray) console.log(num);
-    
-    //movingDiffStrat(calculateAverageStreaks(differenceArray));
-    
+    movingDiffStrat(calculateAverageStreaks(differenceArray));
     console.log(calculateAverageStreaks(differenceArray));
-
+    
 }
 
 function calculateAverageStreaks(differenceData) {
@@ -72,7 +82,7 @@ function calculateAverageStreaks(differenceData) {
     let streak = 1;
     let direction = 0;
     for (let i = differenceData.length - 1; i >= 0; i--) {
-
+        
         
         if (direction == 0) {
             if (differenceData[i] >= 0) {
@@ -104,9 +114,22 @@ function calculateAverageStreaks(differenceData) {
         total += num;
     }
     
+    //Calculate market swing value
+    
+    let marketSwing = 0;
+    
+    for (let i = differenceData.length - 1; i > differenceData.length - 16; i--) {
+        if (differenceData[i] > 0) {
+            marketSwing++;
+        } else {
+            marketSwing--;
+        }
+    }
+    
+    
     let negativeAverage = total / negativeAverageArr.length;
-
-    return {positiveAverage: positiveAverage, negativeAverage: negativeAverage, currentStreak: ((direction == -1) ? -streak : streak)};
+    
+    return {positiveAverage: positiveAverage, negativeAverage: negativeAverage, currentStreak: ((direction == -1) ? -streak : streak), marketSwing: marketSwing};
     
 }
 
@@ -119,44 +142,61 @@ function movingDiffStrat(averages) {
     //Wait 1 min
     //Check price, if it hits stop loss value, sell, else. Wait 1 min
     //Go to line 4
-
-    let stopLossValue = 0;
-    let lastPrice = 0;
-    let started = false;
-
-    setInterval(function() {
-        request('https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD&api_key=5dec7fe66779ad98851f91aacca201d83e4fbff441f02a3bce260fbe93c4d987', function(error, response, body) {
-        
-
-        let currentPrice = JSON.parse(body).USD;
-
-        if (!started) {
-            lastPrice = currentPrice;
-            started = true;
-            stopLossValue = trailingStopLoss(currentPrice);
-        } else {
-            
-            if (lastPrice < currentPrice) {
-                //Increased, change stoploss
-                stopLossValue = trailingStopLoss(currentPrice);
-            }
-            
-        }
-        
-        console.log("Current price: " + currentPrice + " | " + "Stop Loss Value: " + stopLossValue);
-
-        if (counter > 0.8 * averages.negativeAverage) {
-            //Buy
-        }
-
-        if (stopLossValue >= currentPrice) {
-            //Sell
-        }
-        
+    
+    request('https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD&api_key=5dec7fe66779ad98851f91aacca201d83e4fbff441f02a3bce260fbe93c4d987', function(error, response, body) {
+    
+    let currentPrice = JSON.parse(body).USD;
+    
+    if (!started) {
         lastPrice = currentPrice;
+        started = true;
+        stopLossValue = trailingStopLoss(currentPrice * 0.998, 0);
+    } else {
         
+        if (lastPrice < currentPrice) {
+            //Increased, change stoploss
+            stopLossValue = trailingStopLoss(stopLossValue, currentPrice - lastPrice);
+            lastPrice = currentPrice;
+        }
+        
+    }
+    
+    console.log("Current price: " + currentPrice + " | " + "Stop Loss Value: " + stopLossValue);
+    
+    if (Math.abs(averages.marketSwing) > 0.8 * averages.negativeAverage && averages.marketSwing < 0 && currentPosition == false) {
+        //Buy
+        let json = {price: currentPrice, position: "Buy"};
+        console.log(json);
+        purchases.push(json);
+        stopLossValue = trailingStopLoss(currentPrice * 0.998, 0);
+        currentPosition = true;
+        fakemoney = fakemoney - currentPrice;
+        
+        fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
+            if (err) throw err;
+            console.log('Saved!');
         });
-    }, 5000);
+        
+    }
+    
+    if (stopLossValue >= currentPrice && currentPosition == true) {
+        //sell
+        fakemoney = fakemoney + currentPrice;
+        let json = {price: currentPrice, position: "Sell", money: fakemoney};
+        console.log(json);
+        purchases.push(json);
+        currentPosition = false;
+        stopLossValue = trailingStopLoss(currentPrice * 0.998, 0);
+        
+        fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
+            if (err) throw err;
+            console.log('Saved!');
+        });
+    }
+    
+    lastPrice = currentPrice;
+    
+});
 
 
 }
@@ -165,13 +205,6 @@ function movingDiffStrat(averages) {
 Only to be ran WHEN AND ONLY WHEN, prices increase, never run on a decrease.
 */
 
-function trailingStopLoss(currentPrice) {
-    
-    let stopValue = 1;
-    let n = 0.003;
-
-    stopValue = currentPrice * (1 - n);
-    
-    return stopValue;
-    //testing   
+function trailingStopLoss(currentStopLoss, difference) {
+    return currentStopLoss + difference;
 }
