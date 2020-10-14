@@ -173,5 +173,5 @@ function trailingStopLoss(currentPrice) {
     stopValue = currentPrice * (1 - n);
     
     return stopValue;
-    
+    //testing   
 }
