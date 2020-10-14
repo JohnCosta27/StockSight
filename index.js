@@ -67,6 +67,26 @@ function calculateAverageStreaks(differenceData) {
 
     }
 
+    let streak = 1;
+    let direction = 0;
+    for (let i = differenceData.length - 1; i >= 0; i--) {
+
+        if (direction == 0) {
+            if (differenceData[i] >= 0) {
+                direction = 1;
+            } else {
+                direction = -1;
+            }
+        } else if (direction == -1) {
+            if (differenceData[i] < 0) streak++
+            else i = -1;
+        } else {
+            if (differenceData[i] >= 0) streak++
+            else i = -1;
+        }
+
+    }
+
     if (positive > 0) positiveAverageArr.push(positive)
     else negativeAverageArr.push(negative);
 
@@ -83,7 +103,7 @@ function calculateAverageStreaks(differenceData) {
 
     let negativeAverage = total / negativeAverageArr.length;
 
-    return {positiveAverage: positiveAverage, negativeAverage: negativeAverage}
+    return {positiveAverage: positiveAverage, negativeAverage: negativeAverage, currentStreak: ((direction == -1) ? -streak : streak)};
 
 }
 
