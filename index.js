@@ -117,7 +117,9 @@ function calculateAverageStreaks(differenceData) {
     
     let marketSwing = 0;
     
-    for (let i = differenceData.length - 1; i > differenceData.length - 31; i--) {
+    //last 45 minutes of market data
+
+    for (let i = differenceData.length - 1; i > differenceData.length - 46; i--) {
         if (differenceData[i] > 0) {
             marketSwing++;
         } else {
@@ -140,7 +142,7 @@ function movingDiffStrat(averages) {
         let currentPrice = JSON.parse(body).USD;
 
         //trialing between 0.2 and 0.8 for market entry so it does not enter to early or to late 
-        if ((averages.marketSwing) >= 4  && averages.positiveAverage * 0.2 < averages.currentStreak && averages.positiveAverage * 0.8 > averages.currentStreak && currentPosition == false) {
+        if ((averages.marketSwing) >= 5  && averages.positiveAverage * 0.2 < averages.currentStreak && averages.positiveAverage  > averages.currentStreak && currentPosition == false) {
             
             //Buy with positive swing
             
@@ -158,7 +160,7 @@ function movingDiffStrat(averages) {
             });
             
             //trialing between 0.2 and 0.8 for market entry so it does not enter to early or to late 
-        } else if ((averages.marketSwing) <= -4  && averages.negativeAverage * 0.2 < Math.abs(averages.currentStreak) && averages.negativeAverage * 0.8 > Math.abs(averages.currentStreak) && currentPosition == false) {
+        } else if ((averages.marketSwing) <= -5  && averages.negativeAverage * 0.2 < Math.abs(averages.currentStreak) && averages.negativeAverage > Math.abs(averages.currentStreak) && currentPosition == false) {
             
             //Short with negative swing
             
