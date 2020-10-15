@@ -5,8 +5,6 @@ let options = {
     url: 'https://min-api.cryptocompare.com/data/v2/histominute?fsym=ETH&tsym=USD&limit=60&api_key=5dec7fe66779ad98851f91aacca201d83e4fbff441f02a3bce260fbe93c4d987',
 }
 
-request(options, dataprocessing);
-
 let currentPosition = false;
 let fakemoney = 500;
 
@@ -155,7 +153,7 @@ function movingDiffStrat(averages) {
             type = 1;
             buyPrice = currentPrice;
 
-            fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
+            fs.appendFile('moving.txt', JSON.stringify(json)  + "\n", function (err) {
                 if (err) throw err;
             });
             
@@ -172,7 +170,7 @@ function movingDiffStrat(averages) {
             type = 2;
             buyPrice = currentPrice;
 
-            fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
+            fs.appendFile('moving.txt', JSON.stringify(json)  + "\n", function (err) {
                 if (err) throw err;
             }); 
             
@@ -200,7 +198,7 @@ function movingDiffStrat(averages) {
                 
                 type = 0;
 
-                fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
+                fs.appendFile('moving.txt', JSON.stringify(json) + "\n", function (err) {
                     if (err) throw err;
                 });
                 
@@ -241,7 +239,7 @@ function movingDiffStrat(averages) {
                 
                 type = 0;
 
-                fs.appendFile('moving.txt', JSON.stringify(json), function (err) {
+                fs.appendFile('moving.txt', JSON.stringify(json)  + "\n", function (err) {
                     if (err) throw err;
                 });
                 
