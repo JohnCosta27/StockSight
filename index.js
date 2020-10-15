@@ -141,7 +141,8 @@ function movingDiffStrat(averages) {
         
         let currentPrice = JSON.parse(body).USD;
 
-        if ((averages.marketSwing) >= 2  && averages.positiveAverage * 0.2 < averages.currentStreak && currentPosition == false) {
+        //trialing between 0.2 and 0.8 for market entry so it does not enter to early or to late 
+        if ((averages.marketSwing) >= 4  && averages.positiveAverage * 0.2 < averages.currentStreak && averages.positiveAverage * 0.8 > averages.currentStreak && currentPosition == false) {
             
             //Buy with positive swing
             
@@ -149,6 +150,7 @@ function movingDiffStrat(averages) {
             console.log(json);
             stopLossValue = trailingStopLoss(currentPrice * 0.998, 0);
             currentPosition = true;
+            //buyPosition = true
             fakemoney = fakemoney - currentPrice;
             type = 1;
             buyPrice = currentPrice;
@@ -157,7 +159,8 @@ function movingDiffStrat(averages) {
                 if (err) throw err;
             });
             
-        } else if ((averages.marketSwing) <= -2  && averages.negativeAverage * 0.2 < Math.abs(averages.currentStreak) && currentPosition == false) {
+            //trialing between 0.2 and 0.8 for market entry so it does not enter to early or to late 
+        } else if ((averages.marketSwing) <= -4  && averages.negativeAverage * 0.2 < Math.abs(averages.currentStreak) && averages.negativeAverage * 0.8 > Math.abs(averages.currentStreak) && currentPosition == false) {
             
             //Short with negative swing
             
@@ -217,7 +220,7 @@ function movingDiffStrat(averages) {
             */
 
            if (lastPrice < currentPrice) {
-                stopLossValue = trailingStopLoss(stopLossValue, lastPrice - currentPrice);
+                stopLossValue = trailingStopLoss(stopLossValue, currentPrice - lastPrice);
             }
 
         } else if (type == 2) {
