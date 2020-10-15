@@ -7,6 +7,8 @@ let options = {
 
 let currentPosition = false;
 let fakemoney = 500;
+// the profit jumping trailing stop was happening multiple times then jumping the SL below the current price and closing the postion instanly
+let jump = false
 
 let stopLossValue = 0;
 let type = 0; //type 1 is the regular buy, type 2 is the short position
@@ -196,6 +198,7 @@ function movingDiffStrat(averages) {
                 let json = {price: currentPrice, position: "Sell", money: fakemoney};
                 console.log(json);
                 currentPosition = false;
+                jump == false;
                 stopLossValue = trailingStopLoss(currentPrice * 0.998, 0);
                 
                 type = 0;
@@ -210,9 +213,11 @@ function movingDiffStrat(averages) {
                 Might need updating
                 This jumps the stop loss to properly stay within the profit windows
             */
+            
 
-            if (currentPrice - buyPrice > 0.0013 * buyPrice) {
+            if (currentPrice - buyPrice > 0.0013 * buyPrice && jump == false) {
                 stopLossValue = trailingStopLoss(stopLossValue, 0.0013 * buyPrice);
+                jump == true 
             }
 
             /*
@@ -237,6 +242,7 @@ function movingDiffStrat(averages) {
                 let json = {price: currentPrice, position: "End Short", money: fakemoney};
                 console.log(json);
                 currentPosition = false;
+                jump == false;
                 stopLossValue = trailingStopLossForShort(currentPrice * 1.002, 0);
                 
                 type = 0;
@@ -253,8 +259,9 @@ function movingDiffStrat(averages) {
                 This jumps the stop loss to properly stay within the profit windows
             */
 
-           if (buyPrice - currentPrice > 0.0013 * buyPrice) {
+           if (buyPrice - currentPrice > 0.0013 * buyPrice && jump == false ) {
                 stopLossValue = trailingStopLossForShort(stopLossValue, 0.0013 * buyPrice);
+                jump == true
             }
 
             /*
