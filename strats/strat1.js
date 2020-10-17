@@ -1,4 +1,5 @@
 const utilClass = require('../util.js');
+const fs = require('fs');
 let util = new utilClass();
 
 class strat1Class {
