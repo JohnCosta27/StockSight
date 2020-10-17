@@ -20,7 +20,7 @@ class strat1Class {
         let currentPrice = JSON.parse(price).USD;
         
         //trialing between 0.2 and 0.8 for market entry so it does not enter to early or to late 
-        if ((averages.marketSwing) >= 5  && averages.positiveAverage * 0.2 < averages.currentStreak && averages.positiveAverage  > averages.currentStreak && currentPosition == false) {
+        if ((averages.marketSwing) >= 5  && averages.positiveAverage * 0.2 < averages.currentStreak && averages.positiveAverage  > averages.currentStreak && this.currentPosition == false) {
             
             //Buy with positive swing
             
