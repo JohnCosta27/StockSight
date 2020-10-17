@@ -201,7 +201,7 @@ function movingDiffStrat(averages) {
                 let json = {price: currentPrice, position: "Sell", money: fakemoney};
                 console.log(json);
                 currentPosition = false;
-                jump == false;
+                jump = false;
                 stopLossValue = trailingStopLoss(currentPrice * 0.998, 0);
                 
                 type = 0;
@@ -220,7 +220,7 @@ function movingDiffStrat(averages) {
 
             if (currentPrice - buyPrice > 0.0013 * buyPrice && jump == false) {
                 stopLossValue = trailingStopLoss(stopLossValue, 0.0013 * buyPrice);
-                jump == true 
+                jump = true 
             }
 
             /*
@@ -246,7 +246,7 @@ function movingDiffStrat(averages) {
                 let json = {price: currentPrice, position: "End Short", money: fakemoney};
                 console.log(json);
                 currentPosition = false;
-                jump == false;
+                jump = false;
                 stopLossValue = trailingStopLossForShort(currentPrice * 1.002, 0);
                 
                 type = 0;
@@ -265,7 +265,7 @@ function movingDiffStrat(averages) {
 
            if (buyPrice - currentPrice > 0.0013 * buyPrice && jump == false ) {
                 stopLossValue = trailingStopLossForShort(stopLossValue, 0.0013 * buyPrice);
-                jump == true
+                jump = true
             }
 
             /*
