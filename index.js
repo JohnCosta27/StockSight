@@ -16,6 +16,9 @@ let type = 0; //type 1 is the regular buy, type 2 is the short position
 let buyPrice = 0;
 let lastPrice = 0;
 
+//this helps solve the issue of our stop loss moving during turbulent price action movements
+let maxValueForStopLoss
+let maxValueForStopLossShort
 /*
 Notes:
 The last item in the array is the closest to us in minutes.
@@ -224,8 +227,9 @@ function movingDiffStrat(averages) {
                 Adjusts the stop loss
             */
 
-           if (lastPrice < currentPrice) {
-                stopLossValue = trailingStopLoss(stopLossValue, currentPrice - lastPrice);
+           if (lastPrice < currentPrice && currentPrice > maxValueForStopLoss) {
+                stopLossValue = trailingStopLoss(stopLossValue, currentPrice - lastPrice)
+                maxValueForStopLoss = currentPrice
             }
 
         } else if (type == 2) {
@@ -268,8 +272,9 @@ function movingDiffStrat(averages) {
                 Adjusts the stop loss
             */
 
-           if (lastPrice > currentPrice) {
+           if (lastPrice > currentPrice && currentPrice < maxValueForStopLossShort) {
                 stopLossValue = trailingStopLossForShort(stopLossValue, lastPrice - currentPrice);
+                maxValueForStopLossShort = currentPrice
             }
 
         }
