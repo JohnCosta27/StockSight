@@ -20,14 +20,14 @@ class strat1Class {
         let currentPrice = JSON.parse(price).USD;
         
         //trialing between 0.2 and 0.8 for market entry so it does not enter to early or to late 
-        if ((averages.marketSwing) >= 5  && averages.positiveAverage * 0.2 < averages.currentStreak && averages.positiveAverage  > averages.currentStreak && this.currentPosition == false) {
+        if ((averages.marketSwing) >= 3  && averages.positiveAverage * 0.2 < averages.currentStreak && averages.positiveAverage  > averages.currentStreak && this.openPosition == false) {
             
             //Buy with positive swing
             
             let json = {price: currentPrice, position: "Buy"};
             console.log(json);
             this.stopLossValue = util.trailingStopLoss(currentPrice * 0.998, 0);
-            this.currentPosition = true;
+            this.openPosition = true;
             //buyPosition = true
             this.money = this.money - currentPrice;
             this.buyPrice = currentPrice;
@@ -43,14 +43,14 @@ class strat1Class {
         Selling section
         */
         
-        if (this.stopLossValue >= currentPrice && this.currentPosition == true) {
+        if (this.stopLossValue >= currentPrice && this.openPosition == true) {
             
             //Sell the current open (buy) position
             
             this.money = this.money + currentPrice;
             let json = {price: currentPrice, position: "Sell", money: this.money};
             console.log(json);
-            this.currentPosition = false;
+            this.openPosition = false;
             this.jump = false;
             this.stopLossValue = util.trailingStopLoss(currentPrice * 0.998, 0);
             
