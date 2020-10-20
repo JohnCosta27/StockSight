@@ -21,7 +21,7 @@ class strat1Class {
         let currentPrice = JSON.parse(price).USD;
         
         //trialing between 0.2 and 0.8 for market entry so it does not enter to early or to late 
-        if ((averages.marketSwing) >= 3  && averages.positiveAverage * 0.2 < averages.currentStreak && averages.positiveAverage  > averages.currentStreak && this.openPosition == false) {
+        if (averages.marketSwing >= 2  && averages.positiveAverage * 0.2 < averages.currentStreak && averages.positiveAverage > averages.currentStreak && this.openPosition == false) {
             
             //Buy with positive swing
             
@@ -29,7 +29,6 @@ class strat1Class {
             console.log(json);
             this.stopLossValue = util.trailingStopLoss(currentPrice * 0.998, 0);
             this.openPosition = true;
-            //buyPosition = true
             this.money = this.money - currentPrice;
             this.buyPrice = currentPrice;
             
@@ -75,7 +74,7 @@ class strat1Class {
         Adjusts the stop loss
         */
         
-        if (this.lastPrice < currentPrice && currentPrice > this.maxValueForStopLoss) {
+        if (currentPrice > this.maxValueForStopLoss) {
             this.stopLossValue = util.trailingStopLoss(this.stopLossValue, currentPrice - this.lastPrice)
             this.maxValueForStopLoss = currentPrice
         }

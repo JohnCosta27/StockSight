@@ -97,7 +97,7 @@ class utilClass {
         
         //last 45 minutes of market data
         
-        for (let i = differenceData.length - 1; i > differenceData.length - 46; i--) {
+        for (let i = differenceData.length - 1; i > differenceData.length - 21; i--) {
             if (differenceData[i] > 0) {
                 marketSwing++;
             } else {
