@@ -30,7 +30,7 @@ let buyPrice = 0;
 
 let endTime = Date.now() + 10000;
 
-connection.onmessage = function (event) {
+/*connection.onmessage = function (event) {
     
     let data = JSON.parse(event.data);
     let price = data.p;
@@ -92,4 +92,34 @@ connection.onmessage = function (event) {
         
     }
     
+}*/
+
+let lastPrice = 0;
+let lastLastPrice = 0;
+
+let marketAccelaration = 0;
+
+let first = true;
+
+connection.onmessage = function (event) {
+
+    let data = JSON.parse(event.data);
+    let price = data.p;
+
+    if (first) {
+
+        lastPrice = price;
+        lastLastPrice = price;
+        first = false;
+
+    } else {
+
+        marketAccelaration += price * 1 - 2 * lastPrice + lastLastPrice * 1;
+        console.log("Price: " + price + " | Market Acceleration: " + marketAccelaration);
+
+        lastLastPrice = lastPrice;
+        lastPrice = price;
+
+    }
+
 }
